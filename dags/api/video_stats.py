@@ -1,17 +1,21 @@
 import requests
 import json
-import os
-from dotenv import load_dotenv
+#import os
+#from dotenv import load_dotenv
+#load_dotenv(dotenv_path = "./.env")
 
 from datetime import date
 
+from airflow.decorators import task
+from airflow.models import Variable
 
-load_dotenv(dotenv_path = "./.env")
 
-Api_key = os.getenv("Api_key")
-Channel_handle = "MrBeast"
+
+Api_key = Variable.get("Api_key")
+Channel_handle = Variable.get("CHANNEL_HANDLE")
 maxResults = 50
 
+@task
 def get_playlist_id():
 
     try:
@@ -35,7 +39,8 @@ def get_playlist_id():
 
     except requests.exceptions.RequestException as e:
         raise e
-    
+
+@task  
 def get_video_id(playlistId):
 
     video_ids = []
@@ -74,6 +79,8 @@ def get_video_id(playlistId):
     except requests.exceptions.RequestException as e:
         raise e
     
+
+@task    
 def extract_video_data(video_ids):
 
     extracted_data = []
@@ -120,6 +127,7 @@ def extract_video_data(video_ids):
     except requests.exceptions.RequestException as e:
         raise e
 
+@task
 def save_to_json(extracted_data):
 
     file_path = f"./data/YT_data_{date.today()}.json"
