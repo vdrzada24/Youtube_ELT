@@ -1,47 +1,47 @@
-# using GitHub Actions....
+#using GitHub Actions....
 name: CI-CD Pipeline
 
 on:
-  push:
-    branches:
-      -main
-      -'feature/*'
-  pull request:
-    branches:
-      -main
-  workflow_dispatch:
+    push:
+        branches:
+            - main
+            - 'feature/*'
+    pull_request:
+        branches:
+            - main
+    workflow_dispatch:
 
 jobs:
-  build-and-push-image:
-  runs-on: ubuntu-latest
-  steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Get changed files
-        id: changed-files-build
-        uses: tj-actions/changed-files@v45
-        with:
-          files: |
-              Dockerfile
-              requirements.txt
-      - name: Set up Docker Buildx
-        if: steps.changed-files-build.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to DockerHub
-        if: steps.changed-files-build.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Build and push Docker image
-        if: steps.changed-files-build.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
-        run: |
-                docker buildx build --push \
-                  --tag ${{ vars.DOCKERHUB_NAMESPACE }}/${{ vars.DOCKERHUB_REPOSITORY }}:latest \
-                  --tag ${{ vars.DOCKERHUB_NAMESPACE }}/${{ vars.DOCKERHUB_REPOSITORY }}:${{ github.sha }} \
-                  .
+    build-and-push-image:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+            - name: Get changed files
+              id: changed-files-build
+              uses: tj-actions/changed-files@v45
+              with:
+                files: |
+                    Dockerfile
+                    requirements.txt
+            - name: Set up Docker Buildx
+              if: steps.changed-files-build.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+              uses: docker/setup-buildx-action@v3
+            - name: Log in to DockerHub
+              if: steps.changed-files-build.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+              uses: docker/login-action@v3
+              with:
+                username: ${{ vars.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_PASSWORD }}
+            - name: Build and push Docker image
+              if: steps.changed-files-build.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
+              run: |
+                      docker buildx build --push \
+                        --tag ${{ vars.DOCKERHUB_NAMESPACE }}/${{ vars.DOCKERHUB_REPOSITORY }}:latest \
+                        --tag ${{ vars.DOCKERHUB_NAMESPACE }}/${{ vars.DOCKERHUB_REPOSITORY }}:${{ github.sha }} \
+                        .
 
-  unit-and-integration-and-e2e-tests:
+    unit-and-integration-and-e2e-tests:
       runs-on: ubuntu-latest
       needs: build-and-push-image
       env:
@@ -89,7 +89,7 @@ jobs:
         - name: Run End-to-End DAG Tests
           if: steps.changed-files-tests.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
           run: |
-            DAG_NAMES=("producer_json" "update_database" "data_quality_checks")
+            DAG_NAMES=("produce_json" "update_db" "data_quality")
             for DAG in "${DAG_NAMES[@]}"; do 
               docker exec -t airflow-worker sh -c "airflow dags test $DAG"
             done
